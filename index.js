@@ -26,7 +26,7 @@ if (fs.existsSync(FILE_NAME)) {
 
 // Create a scheduler which pinging to AP every 20 mins
 var rule = new scheduler.RecurrenceRule();
-rule.minute = [0, 20, 40];
+rule.minute = [0, 12, 24, 36, 48];
 scheduler.scheduleJob(rule, () => {
   console.log("running job...");
 
