@@ -65,6 +65,19 @@ app.post("/auth", (req, res) => {
   res.send("ok");
 });
 
+app.post("/remove_user", (req, res) => {
+  const { username, key } = req.body;
+
+  if (!username || !key) {
+    return res.status(404).send("missing params");
+  }
+
+  delete students[username];
+
+  fs.writeFileSync(FILE_NAME, JSON.stringify(students), "utf8");
+  res.send("ok");
+});
+
 app.post("/users", (req, res) => {
   const { key } = req.body;
 
