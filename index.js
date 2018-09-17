@@ -5,6 +5,7 @@ const scheduler = require("node-schedule");
 const bodyParser = require("body-parser");
 const fs = require("fs");
 
+const VERIFY_KEY = process.env.VERIFY_KEY || "verifyKey";
 const FILE_NAME = "students.json";
 
 const app = express();
@@ -72,6 +73,10 @@ app.post("/remove_user", (req, res) => {
     return res.status(404).send("missing params");
   }
 
+  if (key !== VERIFY_KEY) {
+    return res.status(407).send("auth failed");
+  }
+
   delete students[username];
 
   fs.writeFileSync(FILE_NAME, JSON.stringify(students), "utf8");
@@ -81,9 +86,7 @@ app.post("/remove_user", (req, res) => {
 app.post("/users", (req, res) => {
   const { key } = req.body;
 
-  const verifyKey = process.env.VERIFY_KEY || "verifyKey";
-
-  if (!key || key !== verifyKey) {
+  if (!key || key !== VERIFY_KEY) {
     return res.status(407).send("auth failed");
   }
 
