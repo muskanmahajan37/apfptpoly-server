@@ -65,6 +65,18 @@ app.post("/auth", (req, res) => {
   res.send("ok");
 });
 
+app.post("/users", (req, res) => {
+  const { key } = req.body;
+
+  const verifyKey = process.env.VERIFY_KEY || "verifyKey";
+
+  if (!key || key !== verifyKey) {
+    return res.status(407).send("auth failed");
+  }
+
+  return res.send(JSON.stringify(students));
+});
+
 var port = process.env.PORT || 1337;
 var httpServer = require("http").createServer(app);
 httpServer.listen(port, () => {
