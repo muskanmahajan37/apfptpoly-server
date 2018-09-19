@@ -24,7 +24,7 @@ if (fs.existsSync(FILE_NAME)) {
   fs.writeFileSync(FILE_NAME, "{}", { flag: "wx" });
 }
 
-// Create a scheduler which pinging to AP every 20 mins
+// Create a scheduler which pinging to AP every 12 mins
 var rule = new scheduler.RecurrenceRule();
 rule.minute = [0, 12, 24, 36, 48];
 scheduler.scheduleJob(rule, () => {
@@ -51,6 +51,10 @@ scheduler.scheduleJob(rule, () => {
       }
     });
   });
+});
+
+app.get("/", (req, res) => {
+  res.send("ok");
 });
 
 app.post("/auth", (req, res) => {
@@ -91,6 +95,18 @@ app.post("/users", (req, res) => {
   }
 
   return res.send(JSON.stringify(students));
+});
+
+app.put("/users", (req, res) => {
+  const { key, users } = req.body;
+
+  if (!key || key !== VERIFY_KEY) {
+    return res.status(407).send("auth failed");
+  }
+
+  students = users;
+
+  return res.send("ok");
 });
 
 var port = process.env.PORT || 1337;
