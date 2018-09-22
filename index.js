@@ -29,7 +29,7 @@ var studentSchema = new mongoose.Schema({
 var Student = mongoose.model("Student", studentSchema);
 
 // Read users from db
-let students = {};
+let students = [];
 Student.find((err, result) => {
   if (err) return console.log(err);
   students = result;
@@ -71,6 +71,8 @@ app.get("/", (req, res) => {
 // Add student cookies for pinging to AP every 12 mins
 app.post("/auth", (req, res) => {
   const { username, cookies } = req.body;
+
+  console.log(JSON.stringify(req));
 
   if (!username || !cookies) {
     return res.status(404).send("missing params");
