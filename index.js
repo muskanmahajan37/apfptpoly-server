@@ -3,6 +3,7 @@ const request = require("request");
 const scheduler = require("node-schedule");
 const bodyParser = require("body-parser");
 const fs = require("fs");
+const mongoose = require("mongoose");
 
 const VERIFY_KEY = process.env.VERIFY_KEY || "verifyKey";
 const FILE_NAME = "students.json";
@@ -10,18 +11,29 @@ const FILE_NAME = "students.json";
 const app = express();
 app.use(bodyParser.json());
 
-// app.get("/", (req, res) => {
-//   res.sendFile(path.join(__dirname, "/public/index.html"));
-// });
+// Connect to db
+mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost");
+mongoose.Promise = global.Promise;
+var db = mongoose.connection;
 
-// Read users from file (or create if not exists)
+db.on("error", console.error.bind(console, "connection error:"));
+db.once("open", () => console.log("connected"));
+
+// Create a schema
+var studentSchema = new mongoose.Schema({
+  username: String,
+  cookies: Array
+});
+
+// Create a model
+var Student = mongoose.model("Student", studentSchema);
+
+// Read users from db
 let students = {};
-if (fs.existsSync(FILE_NAME)) {
-  const content = fs.readFileSync(FILE_NAME, "utf8");
-  students = JSON.parse(content);
-} else {
-  fs.writeFileSync(FILE_NAME, "{}", { flag: "wx" });
-}
+Student.find((err, result) => {
+  if (err) return console.log(err);
+  students = result;
+});
 
 // Create a scheduler which pinging to AP every 12 mins
 var rule = new scheduler.RecurrenceRule();
@@ -64,57 +76,21 @@ app.post("/auth", (req, res) => {
     return res.status(404).send("missing params");
   }
 
-  if (!students[username]) {
+  const index = students.findIndex(student => student.username === username);
+
+  let student = null;
+  if (index === -1) {
     console.log("new student: " + username);
-    students[username] = [];
+    student = new Student({ username, cookies: [] });
+    students.push(student);
+  } else {
+    student = students[index];
   }
 
-  students[username].push(cookies);
-  fs.writeFileSync(FILE_NAME, JSON.stringify(students), "utf8");
+  student.cookies.push(cookies);
+  student.save();
+
   res.send("ok");
-});
-
-app.post("/remove_user", (req, res) => {
-  const { username, key } = req.body;
-
-  if (!username || !key) {
-    return res.status(404).send("missing params");
-  }
-
-  if (key !== VERIFY_KEY) {
-    return res.status(407).send("auth failed");
-  }
-
-  delete students[username];
-
-  fs.writeFileSync(FILE_NAME, JSON.stringify(students), "utf8");
-  res.send("ok");
-});
-
-// Get all users (backup only)
-app.post("/users", (req, res) => {
-  const { key } = req.body;
-
-  if (!key || key !== VERIFY_KEY) {
-    return res.status(407).send("auth failed");
-  }
-
-  return res.send(JSON.stringify(students));
-});
-
-// Update data (for reset or restore backed up data)
-app.put("/users", (req, res) => {
-  const { key, users } = req.body;
-
-  if (!key || key !== VERIFY_KEY) {
-    return res.status(407).send("auth failed");
-  }
-
-  students = users;
-
-  fs.writeFileSync(FILE_NAME, JSON.stringify(students), "utf8");
-
-  return res.send("ok");
 });
 
 var port = process.env.PORT || 1337;
