@@ -72,9 +72,6 @@ app.get("/", (req, res) => {
 app.post("/auth", (req, res) => {
   const { username, cookies } = req.body;
 
-  console.log(JSON.stringify(req.params));
-  console.log(JSON.stringify(req.body));
-
   if (!username || !cookies) {
     return res.status(404).send("missing params");
   }
