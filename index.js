@@ -37,12 +37,12 @@ Student.find((err, result) => {
 
 // Create a scheduler which pinging to AP every 12 mins
 var rule = new scheduler.RecurrenceRule();
-rule.minute = [0, 12, 24, 36, 48];
+rule.minute = [0, 12, 24, 36, 50];
 scheduler.scheduleJob(rule, () => {
   console.log("running job...");
 
-  Object.keys(students).forEach(username => {
-    students[username].forEach(cookie => {
+  students.forEach(student => {
+    student.cookies.forEach(cookie => {
       const options = {
         url: "http://ap.poly.edu.vn/students/index.php",
         method: "GET",
@@ -54,7 +54,7 @@ scheduler.scheduleJob(rule, () => {
 
       request(options, (err, response) => {
         if (!err && response.statusCode === 200) {
-          console.log("run job for user " + username);
+          console.log("run job for user " + student.username);
         } else {
           console.log(err);
         }
