@@ -37,7 +37,7 @@ Student.find((err, result) => {
 
 // Create a scheduler which pinging to AP every 12 mins
 var rule = new scheduler.RecurrenceRule();
-rule.minute = [0, 12, 24, 36, 50];
+rule.minute = [0, 12, 24, 36, 48];
 scheduler.scheduleJob(rule, () => {
   console.log("running job...");
 
