@@ -12,54 +12,70 @@ const app = express();
 app.use(bodyParser.json());
 
 // Connect to db
-mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost");
+mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost:27017/ap");
 mongoose.Promise = global.Promise;
-var db = mongoose.connection;
+const db = mongoose.connection;
 
 db.on("error", console.error.bind(console, "connection error:"));
 db.once("open", () => console.log("connected"));
 
 // Create a schema
-var studentSchema = new mongoose.Schema({
+const studentSchema = new mongoose.Schema({
   username: String,
+  cookie: String,
   cookies: Array
 });
 
+const crawl = async students => {
+  try {
+    for (let i = 0; i < students.length; i++) {
+      const student = students[i];
+
+      student.cookie = student.cookies[student.cookies.length - 1];
+      await student.save();
+      console.log(`${i + 1}/${students.length}`);
+    }
+  } catch (err) {
+    console.log(err);
+  }
+};
+
 // Create a model
-var Student = mongoose.model("Student", studentSchema);
+const Student = mongoose.model("Student", studentSchema);
 
 // Read users from db
 let students = [];
 Student.find((err, result) => {
   if (err) return console.log(err);
   students = result;
+  crawl(students);
 });
 
-// Create a scheduler which pinging to AP every 12 mins
-var rule = new scheduler.RecurrenceRule();
-rule.minute = [0, 12, 24, 36, 48];
+// Create a scheduler which pinging to AP every 10 mins
+const rule = new scheduler.RecurrenceRule();
+rule.minute = [0, 10, 20, 30, 40, 50];
 scheduler.scheduleJob(rule, () => {
   console.log("running job...");
 
   students.forEach(student => {
-    student.cookies.forEach(cookie => {
+    if (student.cookie) {
       const options = {
         url: "http://ap.poly.edu.vn/students/index.php",
         method: "GET",
         headers: {
-          //Eg: "PHPSESSID=7lccdmkemmvvatchdobe92g001; campus_id=1; campus_name=FPT+Polytechnic+H%C3%A0+N%E1%BB%99i; campus_code=ph; db_config_file_name=ph.inc"
-          Cookie: cookie
+          Cookie: student.cookie
         }
       };
 
       request(options, (err, response) => {
         if (!err && response.statusCode === 200) {
-          console.log("run job for user " + student.username);
+          console.log(`run job for user ${student.username}`);
         } else {
-          console.log(err);
+          student.cookie = undefined;
+          student.save();
         }
       });
-    });
+    }
   });
 });
 
@@ -70,9 +86,14 @@ app.get("/", (req, res) => {
 
 // Add student cookies for pinging to AP every 12 mins
 app.post("/auth", (req, res) => {
-  const { username, cookies } = req.body;
+  let { username, cookie, cookies } = req.body;
 
-  if (!username || !cookies) {
+  // For old version
+  if (cookies) {
+    cookie = cookies;
+  }
+
+  if (!username || !cookie) {
     return res.status(404).send("missing params");
   }
 
@@ -80,21 +101,25 @@ app.post("/auth", (req, res) => {
 
   let student = null;
   if (index === -1) {
-    console.log("new student: " + username);
-    student = new Student({ username, cookies: [] });
+    console.log(`new student: ${username}`);
+    student = new Student({ username, cookie });
     students.push(student);
   } else {
     student = students[index];
+
+    if (student.cookie) {
+      return res.send(student.cookie);
+    }
+
+    student.cookie = cookie;
+    student.save();
   }
-
-  student.cookies.push(cookies);
-  student.save();
-
   res.send("ok");
 });
 
-var port = process.env.PORT || 1337;
-var httpServer = require("http").createServer(app);
+const port = process.env.PORT || 3000;
+const httpServer = require("http").createServer(app);
+
 httpServer.listen(port, () => {
-  console.log("AP running on port " + port + ".");
+  console.log(`AP running on port ${port}`);
 });

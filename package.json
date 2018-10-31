@@ -12,5 +12,8 @@
   },
   "scripts": {
     "start": "node index.js"
+  },
+  "devDependencies": {
+    "eslint-config-rallycoding": "^3.2.0"
   }
 }
