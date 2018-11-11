@@ -26,20 +26,6 @@ const studentSchema = new mongoose.Schema({
   cookies: Array
 });
 
-const crawl = async students => {
-  try {
-    for (let i = 0; i < students.length; i++) {
-      const student = students[i];
-
-      student.cookie = student.cookies[student.cookies.length - 1];
-      await student.save();
-      console.log(`${i + 1}/${students.length}`);
-    }
-  } catch (err) {
-    console.log(err);
-  }
-};
-
 // Create a model
 const Student = mongoose.model("Student", studentSchema);
 
@@ -48,7 +34,6 @@ let students = [];
 Student.find((err, result) => {
   if (err) return console.log(err);
   students = result;
-  crawl(students);
 });
 
 // Create a scheduler which pinging to AP every 10 mins
