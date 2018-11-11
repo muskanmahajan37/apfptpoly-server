@@ -107,12 +107,13 @@ app.post("/auth", (req, res) => {
   } else {
     student = students[index];
 
-    if (student.cookie) {
+    // For old version
+    if (cookies || !student.cookie) {
+      student.cookie = cookie;
+      student.save();
+    } else {
       return res.send(student.cookie);
     }
-
-    student.cookie = cookie;
-    student.save();
   }
   res.send("ok");
 });
