@@ -22,8 +22,7 @@ db.once("open", () => console.log("connected"));
 // Create a schema
 const studentSchema = new mongoose.Schema({
   username: String,
-  cookie: String,
-  cookies: Array
+  cookie: String
 });
 
 // Create a model
@@ -88,6 +87,7 @@ app.post("/auth", (req, res) => {
   if (index === -1) {
     console.log(`new student: ${username}`);
     student = new Student({ username, cookie });
+    student.save();
     students.push(student);
   } else {
     student = students[index];
