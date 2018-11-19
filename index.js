@@ -1,12 +1,8 @@
 const express = require("express");
-const request = require("request");
+const request = require("./request-services");
 const scheduler = require("node-schedule");
 const bodyParser = require("body-parser");
-const fs = require("fs");
 const mongoose = require("mongoose");
-
-const VERIFY_KEY = process.env.VERIFY_KEY || "verifyKey";
-const FILE_NAME = "students.json";
 
 const app = express();
 app.use(bodyParser.json());
@@ -38,29 +34,32 @@ Student.find((err, result) => {
 // Create a scheduler which pinging to AP every 10 mins
 const rule = new scheduler.RecurrenceRule();
 rule.minute = [0, 10, 20, 30, 40, 50];
-scheduler.scheduleJob(rule, () => {
+scheduler.scheduleJob(rule, async () => {
   console.log("running job...");
 
-  students.forEach(student => {
+  for (const student of students) {
     if (student.cookie) {
-      const options = {
-        url: "http://ap.poly.edu.vn/students/index.php",
-        method: "GET",
-        headers: {
-          Cookie: student.cookie
-        }
-      };
+      try {
+        const response = await request({
+          url: "http://ap.poly.edu.vn/students/index.php",
+          method: "GET",
+          headers: {
+            Cookie: student.cookie
+          }
+        });
 
-      request(options, (err, response) => {
-        if (!err && response.statusCode === 200) {
+        if (response.statusCode === 200) {
           console.log(`run job for user ${student.username}`);
         } else {
           student.cookie = undefined;
-          student.save();
+          await student.save();
         }
-      });
+      } catch (err) {
+        student.cookie = undefined;
+        await student.save();
+      }
     }
-  });
+  }
 });
 
 // Use uptimerobot to prevent server from stopping (heroku)
