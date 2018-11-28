@@ -33,14 +33,14 @@ Student.find((err, result) => {
 
 // Create a scheduler which pinging to AP every 10 mins
 const rule = new scheduler.RecurrenceRule();
-rule.minute = [0, 10, 20, 30, 40, 50];
+rule.minute = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50];
 scheduler.scheduleJob(rule, async () => {
   console.log("running job...");
 
   for (const student of students) {
     if (student.cookie) {
       try {
-        const response = await request({
+        const { response, data } = await request({
           url: "http://ap.poly.edu.vn/students/index.php",
           method: "GET",
           headers: {
@@ -48,8 +48,8 @@ scheduler.scheduleJob(rule, async () => {
           }
         });
 
-        if (response.statusCode === 200) {
-          console.log(`run job for user ${student.username}`);
+        if (response.statusCode === 200 && data) {
+          console.log(`job ran for user ${student.username}`);
         } else {
           student.cookie = undefined;
           await student.save();
