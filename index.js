@@ -33,7 +33,7 @@ Student.find((err, result) => {
 
 // Create a scheduler which pinging to AP every 10 mins
 const rule = new scheduler.RecurrenceRule();
-rule.minute = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50];
+rule.minute = [0, 12, 24, 36, 48];
 scheduler.scheduleJob(rule, async () => {
   console.log("running job...");
 
